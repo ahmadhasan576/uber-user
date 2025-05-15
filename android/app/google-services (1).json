@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "659490985048",
+    "firebase_url": "https://uber-ola-and-indriver-cl-fecfa-default-rtdb.firebaseio.com",
+    "project_id": "uber-ola-and-indriver-cl-fecfa",
+    "storage_bucket": "uber-ola-and-indriver-cl-fecfa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659490985048:android:8a0777c3cd03451fe2262d",
+        "android_client_info": {
+          "package_name": "com.ahmadhasan.driverapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiybN1lUEEFkNfBhaGnzRPtY7VujLHfK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659490985048:android:3e2fbeb9f9d5a876e2262d",
+        "android_client_info": {
+          "package_name": "com.ahmadhasan.userapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiybN1lUEEFkNfBhaGnzRPtY7VujLHfK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
