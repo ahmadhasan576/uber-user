@@ -1,221 +1,319 @@
-// import 'package:flutter/material.dart';
-// import 'package:user_app/global/global.dart'; // استيراد البيانات العالمية
-// import 'package:user_app/authentication/login_screen.dart';
-
-// class ProfileTabPage extends StatefulWidget {
-//   const ProfileTabPage({super.key});
-
-//   @override
-//   State<ProfileTabPage> createState() => _ProfileTabPageState();
-// }
-
-// class _ProfileTabPageState extends State<ProfileTabPage> {
-//   // استخراج بيانات المستخدم من النموذج العالمي
-//   String? userName = currentFirebaseUser?.name ?? "User Name";
-//   String? userEmail = currentFirebaseUser?.email ?? "user@example.com";
-//   String? userPhone = userModelCurrentInfo?.phone ?? "Not Available";
-//   String? userLatitude = userModelCurrentInfo?.latitude?.toStringAsFixed(4) ??
-//       "Not Available";
-//   String? userLongitude =
-//       userModelCurrentInfo?.longitude?.toStringAsFixed(4) ?? "Not Available";
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("Account Dashboard"),
-//         centerTitle: true,
-//         backgroundColor: Colors.green,
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.logout),
-//             onPressed: () {
-//               fAuth.signOut(); // تسجيل الخروج
-//               Navigator.pushReplacement(
-//                 context,
-//                 MaterialPageRoute(builder: (context) => LoginScreen()),
-//               );
-//             },
-//           ),
-//         ],
-//       ),
-//       body: SingleChildScrollView(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             // قسم صورة المستخدم
-//             Padding(
-//               padding: const EdgeInsets.all(20.0),
-//               child: Center(
-//                 child: Column(
-//                   children: [
-//                     CircleAvatar(
-//                       radius: 70, // حجم الصورة
-//                       backgroundImage: NetworkImage(
-//                           "https://via.placeholder.com/150"), // صورة افتراضية
-//                       backgroundColor: Colors.grey[300],
-//                     ),
-//                     const SizedBox(height: 10),
-//                     Text(
-//                       userName!,
-//                       style: const TextStyle(
-//                         fontSize: 24,
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-
-//             // قسم بيانات الحساب
-//             Card(
-//               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-//               elevation: 4,
-//               child: Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     const Text(
-//                       "Account Information",
-//                       style: TextStyle(
-//                         fontSize: 18,
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-//                     const Divider(),
-//                     ListTile(
-//                       leading: const Icon(Icons.person),
-//                       title: const Text("Name"),
-//                       subtitle: Text(userName!),
-//                     ),
-//                     ListTile(
-//                       leading: const Icon(Icons.email),
-//                       title: const Text("Email"),
-//                       subtitle: Text(userEmail!),
-//                     ),
-//                     ListTile(
-//                       leading: const Icon(Icons.phone),
-//                       title: const Text("Phone"),
-//                       subtitle: Text(userPhone!),
-//                     ),
-//                     ListTile(
-//                       leading: const Icon(Icons.location_on),
-//                       title: const Text("Location"),
-//                       subtitle: Text("Latitude: $userLatitude, Longitude: $userLongitude"),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-
-//             // زر تسجيل الخروج
-//             Padding(
-//               padding: const EdgeInsets.all(20.0),
-//               child: ElevatedButton(
-//                 onPressed: () {
-//                   fAuth.signOut(); // تسجيل الخروج
-//                   Navigator.pushReplacement(
-//                     context,
-//                     MaterialPageRoute(builder: (context) => LoginScreen()),
-//                   );
-//                 },
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: Colors.red,
-//                   foregroundColor: Colors.white,
-//                   minimumSize: const Size(double.infinity, 50),
-//                   shape: RoundedRectangleBorder(
-//                     borderRadius: BorderRadius.circular(10),
-//                   ),
-//                 ),
-//                 child: const Text(
-//                   "Sign Out",
-//                   style: TextStyle(fontSize: 18),
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-class ProfileTabPage extends StatefulWidget {
+class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
+
   @override
-  _ProfileTabPage createState() => _ProfileTabPage();
+  State<AccountPage> createState() => _AccountPageState();
 }
 
-class _ProfileTabPage extends State<ProfileTabPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseReference = FirebaseDatabase.instance
-      .ref()
-      .child('users');
+class _AccountPageState extends State<AccountPage> {
+  final FirebaseAuth fAuth = FirebaseAuth.instance;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
-  User? _currentUser;
-  Map<String, dynamic>? _userData;
+  bool isLoading = true;
+  bool isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUser();
-    _getUserData();
+    fetchUserData();
   }
 
-  void _getCurrentUser() {
-    setState(() {
-      _currentUser = _auth.currentUser;
-    });
-  }
+  fetchUserData() async {
+    User? user = fAuth.currentUser;
+    if (user != null) {
+      DatabaseReference userRef = FirebaseDatabase.instance
+          .ref()
+          .child("Users")
+          .child(user.uid);
 
-  void _getUserData() async {
-    if (_currentUser != null) {
-      final snapshot = await _databaseReference.child(_currentUser!.uid).get();
-      if (snapshot.exists) {
-        setState(() {
-          _userData = Map<String, dynamic>.from(snapshot.value as Map);
-        });
-      }
+      userRef
+          .once()
+          .then((DatabaseEvent event) {
+            final dataSnapshot = event.snapshot;
+            if (dataSnapshot.exists) {
+              setState(() {
+                nameController.text =
+                    dataSnapshot.child("name").value?.toString() ?? "";
+                emailController.text =
+                    dataSnapshot.child("email").value?.toString() ?? "";
+                phoneController.text =
+                    dataSnapshot.child("phone").value?.toString() ?? "";
+                isLoading = false;
+              });
+            } else {
+              setState(() => isLoading = false);
+            }
+          })
+          .catchError((error) {
+            print("Error: $error");
+            setState(() => isLoading = false);
+          });
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Dashboard')),
-      body:
-          _userData != null
-              ? Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    ListTile(
-                      title: Text('Name'),
-                      subtitle: Text(_userData!['name']),
-                    ),
-                    ListTile(
-                      title: Text('Email'),
-                      subtitle: Text(_userData!['email']),
-                    ),
-                    ListTile(
-                      title: Text('Phone'),
-                      subtitle: Text(_userData!['phone']),
-                    ),
-                    ListTile(
-                      title: Text('Location'),
-                      subtitle: Text(
-                        'Latitude: ${_userData!['latitude']}, Longitude: ${_userData!['longitude']}',
+  updateUserData() async {
+    User? user = fAuth.currentUser;
+    if (user != null) {
+      DatabaseReference userRef = FirebaseDatabase.instance
+          .ref()
+          .child("Users")
+          .child(user.uid);
+
+      await userRef.update({
+        "name": nameController.text,
+        "email": emailController.text,
+        "phone": phoneController.text,
+      });
+
+      setState(() {
+        isEditing = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("تم حفظ التعديلات بنجاح")));
+    }
+  }
+
+  Widget _buildInfoField({
+    required IconData icon,
+    required String label,
+    required TextEditingController controller,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.grey[700]),
+          SizedBox(width: 12),
+          Expanded(
+            child:
+                isEditing
+                    ? TextFormField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText: label,
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    )
+                    : Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        "${label}: ${controller.text}",
+                        style: TextStyle(fontSize: 16),
                       ),
                     ),
-                  ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: Text("Account Dashboard"),
+  //       backgroundColor: Colors.indigo,
+  //       actions: [
+  //         IconButton(icon: Icon(Icons.refresh), onPressed: fetchUserData),
+  //       ],
+  //     ),
+  //     body:
+  //         isLoading
+  //             ? Center(child: CircularProgressIndicator())
+  //             : SingleChildScrollView(
+  //               padding: const EdgeInsets.all(20),
+  //               child: Column(
+  //                 children: [
+  //                   Card(
+  //                     elevation: 4,
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(16),
+  //                     ),
+  //                     child: Padding(
+  //                       padding: const EdgeInsets.all(20),
+  //                       child: Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         children: [
+  //                           Text(
+  //                             "Account Information",
+  //                             style: TextStyle(
+  //                               fontSize: 20,
+  //                               fontWeight: FontWeight.bold,
+  //                             ),
+  //                           ),
+  //                           Divider(height: 30),
+  //                           _buildInfoField(
+  //                             icon: Icons.person,
+  //                             label: "Name",
+  //                             controller: nameController,
+  //                           ),
+  //                           _buildInfoField(
+  //                             icon: Icons.email,
+  //                             label: "Email",
+  //                             controller: emailController,
+  //                           ),
+  //                           _buildInfoField(
+  //                             icon: Icons.phone,
+  //                             label: "Phone",
+  //                             controller: phoneController,
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   SizedBox(height: 20),
+  //                   ElevatedButton.icon(
+  //                     onPressed: () {
+  //                       if (isEditing) {
+  //                         updateUserData();
+  //                       } else {
+  //                         setState(() => isEditing = true);
+  //                       }
+  //                     },
+  //                     icon: Icon(isEditing ? Icons.save : Icons.edit),
+  //                     label: Text(isEditing ? "Save Changes" : "Edit"),
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: isEditing ? Colors.green : Colors.blue,
+  //                       minimumSize: Size(double.infinity, 50),
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   SizedBox(height: 10),
+  //                   ElevatedButton.icon(
+  //                     onPressed: () async {
+  //                       await fAuth.signOut();
+  //                       // يمكنك التوجيه إلى صفحة تسجيل الدخول هنا
+  //                     },
+  //                     icon: Icon(Icons.logout),
+  //                     label: Text("Sign Out"),
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: Colors.red,
+  //                       minimumSize: Size(double.infinity, 50),
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //   );
+  // }
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl, // دعم الاتجاه من اليمين لليسار
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("لوحة التحكم بالحساب"),
+          backgroundColor: Colors.indigo,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: fetchUserData,
+              tooltip: "تحديث البيانات",
+            ),
+          ],
+        ),
+        body:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "معلومات الحساب",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Divider(height: 30),
+                              _buildInfoField(
+                                icon: Icons.person,
+                                label: "الاسم",
+                                controller: nameController,
+                              ),
+                              _buildInfoField(
+                                icon: Icons.email,
+                                label: "البريد الإلكتروني",
+                                controller: emailController,
+                              ),
+                              _buildInfoField(
+                                icon: Icons.phone,
+                                label: "رقم الهاتف",
+                                controller: phoneController,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          if (isEditing) {
+                            updateUserData();
+                          } else {
+                            setState(() => isEditing = true);
+                          }
+                        },
+                        icon: Icon(isEditing ? Icons.save : Icons.edit),
+                        label: Text(isEditing ? "حفظ التغييرات" : "تعديل"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isEditing ? Colors.green : Colors.blue,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await fAuth.signOut();
+                          // يمكنك التوجيه إلى صفحة تسجيل الدخول هنا
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text("تسجيل الخروج"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              )
-              : Center(child: CircularProgressIndicator()),
+      ),
     );
   }
 }

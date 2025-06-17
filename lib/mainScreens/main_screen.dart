@@ -23,7 +23,7 @@ class _MainScreen extends State<MainScreen>
   void initState() {
     // TODO: implement initState
     super.initState();
-    tabController = TabController(length: 4, vsync: this);
+    tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -36,7 +36,7 @@ class _MainScreen extends State<MainScreen>
           HomeTab(),
           // const EarningTabPage(),
           // const RatingsTabPage(),
-          ProfileTabPage(),
+          AccountPage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
